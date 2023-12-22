@@ -90,7 +90,13 @@ class App {
   #workouts = [];
 
   constructor() {
+    // Get user's position
     this._getPosition();
+
+    // Get data from local storage
+    this._getLocalStorage();
+
+    // Attach event handlers
     form.addEventListener("submit", this._newWorkout.bind(this));
     inputType.addEventListener("change", this._toggleElevationField);
     containerWorkouts.addEventListener("click", this._moveToPopup.bind(this));
@@ -115,7 +121,7 @@ class App {
 
     const coords = [latitude, longitude];
 
-    console.log(this);
+    // console.log(this);
     //////////////////////////////////
     // Displaying a Map Using Leaflet Library
     this.#map = L.map("map").setView(coords, this.#mapZoomLevel);
@@ -128,6 +134,8 @@ class App {
 
     // Handling clicks on map
     this.#map.on("click", this._showForm.bind(this));
+
+    this.#workouts.forEach((workout) => this._renderWorkoutMarker(workout));
   }
 
   _showForm(mapE) {
@@ -205,7 +213,7 @@ class App {
 
     // Add new object to workout array
     this.#workouts.push(workout);
-    console.log(workout);
+    // console.log(workout);
 
     // Render workout on map as marker
     this._renderWorkoutMarker(workout);
@@ -215,6 +223,9 @@ class App {
 
     // Hide form + clear input fields
     this._hideForm();
+
+    // Set local storage to all workouts
+    this._setLocalStorage();
   }
 
   _renderWorkoutMarker(workout) {
@@ -296,14 +307,14 @@ class App {
     //////////////////////////////////
     // Move to Marker On Click
     const workoutEl = e.target.closest(".workout");
-    console.log(workoutEl);
+    // console.log(workoutEl);
 
     if (!workoutEl) return;
 
     const workout = this.#workouts.find(
       (workout) => workout.id === workoutEl.dataset.id
     );
-    console.log(workout);
+    // console.log(workout);
 
     this.#map.setView(workout.coords, this.#mapZoomLevel, {
       animate: true,
@@ -313,7 +324,29 @@ class App {
     });
 
     // using the public interface
-    workout.click();
+    // workout.click();
+  }
+
+  //////////////////////////////////
+  // Working with localStorage
+  _setLocalStorage() {
+    localStorage.setItem("workouts", JSON.stringify(this.#workouts)); // localStorage is blocking, dont use it for a lot of data
+  }
+
+  _getLocalStorage() {
+    const data = JSON.parse(localStorage.getItem("workouts")); // when we get objects from string with JSON.parse() we lost the prototye chain. Objects from the local storage are regular objects, they are not objects from the classes Running or Cycling so they are not able to inherit any methods :( -> Uncaught TypeError: workout.click is not a function
+    // console.log(data);
+
+    if (!data) return;
+
+    this.#workouts = data;
+
+    this.#workouts.forEach((workout) => this._renderWorkout(workout));
+  }
+
+  _reset() {
+    localStorage.removeItem("workouts");
+    location.reload(); // location is a big object which has many methods and properties in the browser, one of the methods is reload()
   }
 }
 
